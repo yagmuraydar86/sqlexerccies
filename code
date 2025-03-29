@@ -1,0 +1,126 @@
+CREATE TABLE Products (
+    product_id INT PRIMARY KEY,
+    product_name VARCHAR(100),
+    category VARCHAR(50),
+    unit_price DECIMAL(10, 2)
+);
+
+-- Insert sample data into Products table
+
+INSERT INTO Products (product_id, product_name, category, unit_price) VALUES
+(101, 'Laptop', 'Electronics', 500.00),
+(102, 'Smartphone', 'Electronics', 300.00),
+(103, 'Headphones', 'Electronics', 30.00),
+(104, 'Keyboard', 'Electronics', 20.00),
+(105, 'Mouse', 'Electronics', 15.00);
+
+CREATE TABLE Sales (
+    sale_id INT PRIMARY KEY,
+    product_id INT,
+    quantity_sold INT,
+    sale_date date,
+    total_price DECIMAL(10, 2)
+);
+
+-- Insert sample data into Sales table
+
+INSERT INTO Sales (sale_id, product_id, quantity_sold, sale_date, total_price) VALUES
+(1, 101, 5, TO_DATE('2024-01-01', 'YYYY-MM-DD'), 2500.00),
+(2, 102, 3, TO_DATE('2024-01-02', 'YYYY-MM-DD'), 900.00),
+(3, 103, 2, TO_DATE('2024-01-02', 'YYYY-MM-DD'), 60.00),
+(4, 104, 4, TO_DATE('2024-01-03', 'YYYY-MM-DD'), 80.00),
+(5, 105, 6, TO_DATE('2024-01-03', 'YYYY-MM-DD'), 90.00);
+
+select sum(quantity_sold) as total_quantity_sold
+from SALES 
+join products on sales.product_id=products.product_id
+where products.category='Electronics';
+
+select product_name,quantity_sold*unit_price as total_price
+from SALES
+JOIN PRODUCTS on SALES.PRODUCT_ID=PRODUCTS.product_id;
+
+select product_id , COUNT(*) as sales_count 
+from SALES
+GROUP BY PRODUCT_ID
+order by sales_count desc
+FETCH FIRST 1 ROW only;
+
+select product_id,product_name 
+from PRODUCTS
+where PRODUCT_ID not in(select DISTINCT PRODUCT_ID from sales);
+
+SELECT p.category,SUM(s.total_price) as total_revenue
+from sales s
+join PRODUCTS p on s.product_id=p.product_id
+GROUP by p.CATEGORY;
+
+SELECT category 
+from PRODUCTS
+GROUP by category
+order by avg(unit_price) DESC 
+FETCH first 1 row only ;
+
+select p.product_name 
+from sales s
+join PRODUCTS p on s.PRODUCT_ID=p.PRODUCT_ID
+GROUP by p.PRODUCT_NAME
+having sum (s.TOTAL_PRICE)>30;
+
+
+select TO_DATE ( sale_date,'YYYY-MM-DD') as dateee , count(*) as sales_count
+from sales s
+group by dateee;  
+
+select * from SALES
+where QUANTITY_SOLD > (select avg(quantity_sold)from sales);
+
+
+select p.product_name,
+sum(s.total_price) as total_revenue, (sum(s.total_price)/(select SUM(total_price)from sales))* 100 as revenue_percentage
+from sales s
+join PRODUCTS p on s.PRODUCT_ID=p.PRODUCT_ID
+group by p.PRODUCT_NAME
+order by revenue_percentage DESC 
+fetch first 3 row only;
+
+CREATE view total_sales as
+select p.product_name,p.category,SUM(s.total_price)as total_sales_amount
+from PRODUCTS p
+join sales s on p.PRODUCT_ID=s.PRODUCT_ID
+GROUP by p.PRODUCT_NAME,p.CATEGORY;
+
+select * from TOTAL_SALES;
+
+select product_name ,category , unit_price
+from PRODUCTS
+where PRODUCT_ID in(
+    select PRODUCT_ID
+    from sales
+    GROUP by product_id
+having sum(QUANTITY_SOLD)>(select avg (quantity_sold)from sales)
+);
+
+create view top_products as
+select p.product_name,SUM(s.quantity_sold) as total_quantity_sold 
+from sales s
+join PRODUCTS p on s.PRODUCT_ID=p.PRODUCT_ID
+group by p.product_name
+order by total_quantity_sold desc
+fetch first 3 row only;
+select * FROM TOP_PRODUCTS;
+
+SELECT p.product_name, COUNT(s.sale_id) AS sales_count
+FROM products p
+LEFT JOIN sales s ON p.product_id = s.product_id
+GROUP BY p.product_name;
+
+select * from sales
+where TOTAL_PRICE>(SELECT avg(total_price)from sales);
+
+create view product_sales_info as 
+select p.product_id,p.product_name,p.category,p.unit_price,count(s.sale_id)as total_sales
+from PRODUCTS p
+left join sales s on p.PRODUCT_ID=s.PRODUCT_ID
+group by p.PRODUCT_ID,p.PRODUCT_NAME,p.CATEGORY,p.UNIT_PRICE;
+select * from PRODUCT_SALES_INFO;
